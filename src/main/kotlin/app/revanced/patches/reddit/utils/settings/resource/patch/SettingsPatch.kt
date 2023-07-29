@@ -1,0 +1,57 @@
+package app.revanced.patches.reddit.utils.settings.resource.patch
+
+import app.revanced.patcher.annotation.Description
+import app.revanced.patcher.annotation.Name
+import app.revanced.patcher.annotation.Version
+import app.revanced.patcher.data.ResourceContext
+import app.revanced.patcher.patch.PatchResult
+import app.revanced.patcher.patch.PatchResultError
+import app.revanced.patcher.patch.PatchResultSuccess
+import app.revanced.patcher.patch.ResourcePatch
+import app.revanced.patcher.patch.annotations.DependsOn
+import app.revanced.patcher.patch.annotations.Patch
+import app.revanced.patches.reddit.utils.annotations.RedditCompatibility
+import app.revanced.patches.reddit.utils.fix.decoding.patch.DecodingPatch
+import app.revanced.patches.reddit.utils.integrations.patch.IntegrationsPatch
+import app.revanced.patches.reddit.utils.settings.bytecode.patch.SettingsBytecodePatch
+import kotlin.io.path.exists
+
+@Patch
+@Name("Reddit settings")
+@Description("Adds ReVanced settings to Reddit.")
+@DependsOn(
+    [
+        DecodingPatch::class,
+        IntegrationsPatch::class,
+        SettingsBytecodePatch::class
+    ]
+)
+@RedditCompatibility
+@Version("0.0.1")
+class SettingsPatch : ResourcePatch {
+    override fun execute(context: ResourceContext): PatchResult {
+
+        /**
+         * Replace settings icon and label
+         */
+        arrayOf("preferences", "preferences_logged_in").forEach { targetXML ->
+            val resDirectory = context["res"]
+            val targetXml = resDirectory.resolve("xml").resolve("$targetXML.xml").toPath()
+
+            if (!targetXml.exists())
+                return PatchResultError("The preferences can not be found.")
+
+            val preference = context["res/xml/$targetXML.xml"]
+
+            preference.writeText(
+                preference.readText()
+                    .replace(
+                        "\"@drawable/icon_text_post\" android:title=\"@string/label_acknowledgements\"",
+                        "\"@drawable/icon_beta_planet\" android:title=\"ReVanced Extended\""
+                    )
+            )
+        }
+
+        return PatchResultSuccess()
+    }
+}
